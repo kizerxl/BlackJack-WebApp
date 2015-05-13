@@ -57,7 +57,6 @@ post "/set_name" do
     session[:dealer_hand]<< session[:deck].pop
   end  
   session[:total_bet] = 500
-  session[:current_turn] = "player" 
   redirect "/bet"
 end  
 
