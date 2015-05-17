@@ -2,7 +2,7 @@
 <br>
   <p><%= session[:player_name] %> currently has $<%= session[:total_bet] %></p>
 <br>
-<form action="/game" method="post">
+<form action="/bet" method="post">
   <input type="text" name="player_bet">
   <br>
   <input type="submit" value="Make Bet">

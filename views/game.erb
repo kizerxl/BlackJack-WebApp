@@ -1,15 +1,43 @@
 <h1>Blackjack</h1>
 <br>
-<div>
-  <p>Dealer's Cards:<p>
+  <% if @show_play_again_buttons %>
+   <ul class="inline">
+      <li>
+        <form action="/bet" method="get">
+          <input type="submit" class="btn btn-success" value="Yes"> 
+        </form>
+      </li>
+      <li>
+        <form action="/game_over" method="get">
+          <input type="submit" class="btn btn-warning" value="No"> 
+        </form>
+      </li>
+    </ul>
+  <% end %> 
+<div class="well">
+  <p>Dealer's Cards:</p>
   <ul class="inline">
-      <% session[:dealer_hand].each do |card| %>
-        <li><img src="/images/cards/<%= card_to_image(card) %>"></li>
+      <% session[:dealer_hand].each_with_index do |card, idx| %>
+        <% if session[:turn] != "dealer" && idx == 0 %>
+           <li><img src="/images/cards/cover.jpg"></li> 
+           <% else %> 
+            <li><img src="/images/cards/<%= card_to_image(card) %>"></li>
+        <% end %>
       <% end %>
   </ul>
+  <% if @show_dealer_hit_button %>
+    <p>
+      <h5>Dealer currently has <%= calculate_deck_total(session[:dealer_hand]) %> 
+        and has decided to hit</h5>
+      <form action="/game/dealer/hit" method="post">
+        <input type="submit" class="btn btn-primary" value="See dealer's next 
+        card &rarr;">
+      </form>
+    </p>
+  <% end %>
 </div>
 <br>
-<div>
+<div class="well">
 <p> <%= session[:player_name] %>'s Cards: </p>
   <ul class="inline">
       <% session[:player_hand].each do |card| %>
@@ -17,23 +45,27 @@
       <% end %>
   </ul>
 </div>
-<!-- Hit or Stay buttons --> 
-<h5><%= session[:player_name] %> currently has <%= calculate_deck_total(session[:player_hand]) %>. 
- What would <%= session[:player_name] %> like to do?</h5> 
- <p><%= session[:player_name] %> has $<%= session[:total_bet] %> total. 
- Bet amount this round: $<%= session[:player_bet] %> . </p>
 
-<div>
-  <ul class="inline">
-    <li>
-      <form action="/game" method="post">
-      <input type="submit" value="HIT" class="btn btn-success">
-    </form>
-    </li>
-    <li>
-      <form action="/game" method="post">
-      <input type="submit" value="STAY" class="btn btn-warning">
-    </li>
-    </form>
-  <ul>
-</div>  
+<% if @show_hit_or_stay_buttons %> 
+  <div>
+  <h5><%= session[:player_name] %> currently has 
+      <%= calculate_deck_total(session[:player_hand]) %>. 
+      What would <%= session[:player_name] %> like to do?
+  </h5> 
+  <p><%= session[:player_name] %> has $<%= session[:total_bet] %> 
+            total. Bet amount this round: $<%= session[:player_bet] %> .
+  </p>
+    <ul class="inline">
+      <li>
+        <form action="/game/player/hit" method="post">
+        <input type="submit" value="HIT" class="btn btn-success">
+      </form>
+      </li>
+      <li>
+        <form action="/game/player/stay" method="post">
+        <input type="submit" value="STAY" class="btn btn-warning">
+      </li>
+      </form>
+    <ul>
+  </div>  
+<% end %>
