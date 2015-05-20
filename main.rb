@@ -16,7 +16,7 @@ helpers do
   end 
  
   def calculate_deck_total(player_hand)
-    card_values = player_hand.map{|card_value| card_value[1]}
+    card_values = player_hand.map{|card| card[1]}
     total = 0 
     card_values.each do |card_value| 
       if card_value == "ACE"
@@ -35,7 +35,7 @@ helpers do
   end 
 
   def card_to_image(card)
-    image_name = (card[0].downcase)+"_"+(card[1].to_i == 0 ? card[1].downcase : 
+    (card[0].downcase)+"_"+(card[1].to_i == 0 ? card[1].downcase : 
       card[1])+".jpg"
   end
 
@@ -99,9 +99,9 @@ post "/bet" do
   elsif session[:total_bet] <= 0 
     redirect "/game_over"
   else 
-  session[:player_bet] = params[:player_bet].to_i
-  session[:total_bet] -= session[:player_bet]
-  redirect "/game"
+    session[:player_bet] = params[:player_bet].to_i
+    session[:total_bet] -= session[:player_bet]
+    redirect "/game"
   end 
 end 
 get "/game" do
@@ -163,18 +163,18 @@ get "/game/dealer/compare" do
   player_total = calculate_deck_total(session[:player_hand])
   dealer_total = calculate_deck_total(session[:dealer_hand])
 
-    if player_total > dealer_total
-      scores = "#{session[:player_name]}'s score: 
-      #{calculate_deck_total(session[:player_hand])} | Dealer score: 
-      #{session[:dealer_hand]}"
-      display_win_lose_tie_msg("#{score}","win")
-    elsif player_total < dealer_total
-      display_win_lose_tie_msg("#{score}","lose")
-    else 
-      display_win_lose_tie_msg("#{calculate_deck_total(session[:player_hand])}",
-        "tie")
-    end 
-    erb :game 
+  if player_total > dealer_total
+    scores = "#{session[:player_name]}'s score: 
+    #{calculate_deck_total(session[:player_hand])} | Dealer score: 
+    #{session[:dealer_hand]}"
+    display_win_lose_tie_msg("#{score}","win")
+  elsif player_total < dealer_total
+    display_win_lose_tie_msg("#{score}","lose")
+  else 
+    display_win_lose_tie_msg("#{calculate_deck_total(session[:player_hand])}",
+    "tie")
+  end 
+  erb :game 
 end 
 
 
