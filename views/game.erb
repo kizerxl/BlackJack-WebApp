@@ -1,14 +1,21 @@
+<div id="game">
+    <%if @error %>
+      <div class="alert alert-error"><%=@error%></div>
+    <%elsif @success %>
+      <div class="alert alert-success"><%=@success%></div>
+    <% end %>
 <h1>Blackjack</h1>
 <br>
   <% if @show_play_again_buttons %>
+    <p>Play again?</p>
    <ul class="inline">
       <li>
-        <form action="/bet" method="get">
+        <form id="new_game_yes" action="/bet" method="get">
           <input type="submit" class="btn btn-success" value="Yes"> 
         </form>
       </li>
       <li>
-        <form action="/game_over" method="get">
+        <form id="new_game_no" action="/game_over" method="get">
           <input type="submit" class="btn btn-warning" value="No"> 
         </form>
       </li>
@@ -29,7 +36,7 @@
     <p>
       <h5>Dealer currently has <%= calculate_deck_total(session[:dealer_hand]) %> 
         and has decided to hit</h5>
-      <form action="/game/dealer/hit" method="post">
+      <form id="display_dealer_next_card" action="/game/dealer/hit" method="post">
         <input type="submit" class="btn btn-primary" value="See dealer's next 
         card &rarr;">
       </form>
@@ -52,20 +59,21 @@
       <%= calculate_deck_total(session[:player_hand]) %>. 
       What would <%= session[:player_name] %> like to do?
   </h5> 
-  <p><%= session[:player_name] %> has $<%= session[:total_bet] %> 
+  <p><%= session[:player_name] %> has $<%= session[:player_pot] %> 
             total. Bet amount this round: $<%= session[:player_bet] %> .
   </p>
     <ul class="inline">
       <li>
-        <form action="/game/player/hit" method="post">
+        <form id="hit_action" action="/game/player/hit" method="post">
         <input type="submit" value="HIT" class="btn btn-success">
       </form>
       </li>
       <li>
-        <form action="/game/player/stay" method="post">
+        <form id="stay_action" action="/game/player/stay" method="post">
         <input type="submit" value="STAY" class="btn btn-warning">
       </li>
       </form>
     <ul>
   </div>  
 <% end %>
+</div>

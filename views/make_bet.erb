@@ -1,6 +1,6 @@
 <h4>Place your bet<strong>!</strong></h4>
 <br>
-  <p><%= session[:player_name] %> currently has $<%= session[:total_bet] %></p>
+  <p><%= session[:player_name] %> currently has $<%= session[:player_pot] %></p>
 <br>
 <form action="/bet" method="post">
   <input type="text" name="player_bet">

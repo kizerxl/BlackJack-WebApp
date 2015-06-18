@@ -7,6 +7,7 @@ SUITS = ["Hearts", "Diamonds", "Spades", "Clubs"]
 CARDS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "ACE", "KING", "QUEEN", 
 "JACK"]
 BLACKJACK = 21
+INITIAL_BET_AMOUNT = 500 
   
 helpers do 
  
@@ -46,19 +47,30 @@ helpers do
 
   def display_win_lose_tie_msg(msg, win_lose_tie)
     if win_lose_tie == "win"
-      @success = "<strong>#{session[:player_name]} WINS!<strong> #{msg}"
+      session[:player_pot] = session[:player_pot] + session[:player_bet]
+      @success = "<strong>#{session[:player_name]} WINS! #{msg} </strong>"
       new_round
     elsif win_lose_tie == "lose"
-      @error = "<strong>#{session[:player_name]} loses..<strong> #{msg}"
+      session[:player_pot] =  session[:player_pot] - session[:player_bet]
+      @error = "<strong>#{session[:player_name]} loses..#{msg}</strong>"
       new_round
     else 
       @success = "<strong>#{session[:player_name]} has tied with dealer 
-      </strong> with a score of #{msg}"
+       with a score of #{msg}</strong>"
       new_round
     end 
   end 
 
-end 
+  def player_has_blackjack?(current_hand_total)
+    if current_hand_total == BLACKJACK
+      display_win_lose_tie_msg("#{session[:player_name]} has hit BLACKJACK", 
+      "win")
+    elsif current_hand_total > BLACKJACK
+      display_win_lose_tie_msg("#{session[:player_name]} has BUSTED", "lose")
+    end
+  end 
+  
+  end 
 
 before do
   @show_hit_or_stay_buttons = true 
@@ -69,13 +81,12 @@ get "/" do
   if session[:player_name]
     redirect "/game"
   else  
-    session[:total_bet] = 500 
-    erb :set_name 
+    redirect "/set_name"
   end 
 end 
 
 get "/set_name" do
-  session[:total_bet] = 500 
+  session[:player_pot] = INITIAL_BET_AMOUNT 
   erb :set_name
 end 
 
@@ -89,45 +100,45 @@ post "/set_name" do
 end  
 
 get "/bet" do
+  session[:player_bet] = nil
   erb :make_bet
 end 
 
 post "/bet" do 
-  if params[:player_bet].empty? || params[:player_bet].to_i <= 0 
+  if params[:player_bet].nil? || params[:player_bet].to_i <= 0 
     @error = "Don't be cheap...place a bet" 
     halt erb :make_bet
-  elsif session[:total_bet] <= 0 
+  elsif params[:player_bet].to_i > session[:player_pot]
+    @error = "Slow down big roller..let's trying betting within your limit:\n
+      $#{session[:player_pot]} or less.."
+      halt erb :make_bet
+  elsif session[:player_pot] <= 0 
     redirect "/game_over"
   else 
     session[:player_bet] = params[:player_bet].to_i
-    session[:total_bet] -= session[:player_bet]
     redirect "/game"
   end 
 end 
+
 get "/game" do
   session[:deck] = make_deck
   session[:player_hand] = []
   session[:dealer_hand] = []
   2.times do 
-    session[:player_hand]<< session[:deck].pop
+    session[:player_hand]<< session[:deck].pop 
     session[:dealer_hand]<< session[:deck].pop
-  end  
+  end
   session[:turn] = session[:player_name]
-  session[:player_bet] = params[:player_bet].to_i
-  session[:turn] = session[:player_name]
+  current_hand_total= calculate_deck_total(session[:player_hand]) 
+  player_has_blackjack?(current_hand_total)
   erb :game 
 end 
 
 post "/game/player/hit" do
   session[:player_hand]<< session[:deck].pop
   current_hand_total= calculate_deck_total(session[:player_hand])
-  
-  if current_hand_total == BLACKJACK
-    display_win_lose_tie_msg("#{session[:player_name]} has hit BLACKJACK", "win")
-  elsif current_hand_total > BLACKJACK
-    display_win_lose_tie_msg("#{session[:player_name]} has BUSTED", "lose")
-  end
-  erb :game 
+  player_has_blackjack?(current_hand_total)
+ erb :game, layout: false 
 end 
 
 post "/game/player/stay" do
@@ -150,7 +161,7 @@ get "/game/dealer" do
   else
     @show_dealer_hit_button = true
   end  
-  erb :game
+  erb :game, layout: false 
 end 
 
 post "/game/dealer/hit" do
@@ -162,11 +173,10 @@ get "/game/dealer/compare" do
   @show_hit_or_stay_buttons = false
   player_total = calculate_deck_total(session[:player_hand])
   dealer_total = calculate_deck_total(session[:dealer_hand])
+  score = "#{session[:player_name]}'s score: #{player_total} | 
+  Dealer score: #{dealer_total}"
 
   if player_total > dealer_total
-    scores = "#{session[:player_name]}'s score: 
-    #{calculate_deck_total(session[:player_hand])} | Dealer score: 
-    #{session[:dealer_hand]}"
     display_win_lose_tie_msg("#{score}","win")
   elsif player_total < dealer_total
     display_win_lose_tie_msg("#{score}","lose")
@@ -174,7 +184,7 @@ get "/game/dealer/compare" do
     display_win_lose_tie_msg("#{calculate_deck_total(session[:player_hand])}",
     "tie")
   end 
-  erb :game 
+  erb :game, layout: false 
 end 
 
 
