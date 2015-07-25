@@ -1,7 +1,10 @@
-require 'rubygems'
+require 'rubygems' 
 require 'sinatra'
 
-set :sessions, true
+use Rack::Session::Cookie, :key => 'rack.session',
+                           :path => '/',
+                           :secret => 'some random string'
+
 
 SUITS = ["Hearts", "Diamonds", "Spades", "Clubs"]
 CARDS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "ACE", "KING", "QUEEN", 
@@ -21,16 +24,16 @@ helpers do
     total = 0 
     card_values.each do |card_value| 
       if card_value == "ACE"
-        total+= 11
+        total += 11
       elsif card_value.to_i == 0 #For suits ie Jester, Queen
-        total+= 10
+        total += 10
       else 
-        total+= card_value.to_i
+        total += card_value.to_i
       end
     end
     #adjust for Aces
     card_values.select{|card| card == "ACE"}.count.times do 
-      total-=10 if total > BLACKJACK
+      total -= 10 if total > BLACKJACK
     end 
    total  
   end 
@@ -45,32 +48,29 @@ helpers do
       @show_play_again_buttons = true
   end 
 
-  def display_win_lose_tie_msg(msg, win_lose_tie)
+  def display_game_results(msg, win_lose_tie)
     if win_lose_tie == "win"
       session[:player_pot] = session[:player_pot] + session[:player_bet]
       @success = "<strong>#{session[:player_name]} WINS! #{msg} </strong>"
-      new_round
     elsif win_lose_tie == "lose"
       session[:player_pot] =  session[:player_pot] - session[:player_bet]
       @error = "<strong>#{session[:player_name]} loses..#{msg}</strong>"
-      new_round
     else 
       @success = "<strong>#{session[:player_name]} has tied with dealer 
        with a score of #{msg}</strong>"
-      new_round
     end 
+    new_round
   end 
 
-  def player_has_blackjack?(current_hand_total)
-    if current_hand_total == BLACKJACK
-      display_win_lose_tie_msg("#{session[:player_name]} has hit BLACKJACK", 
-      "win")
-    elsif current_hand_total > BLACKJACK
-      display_win_lose_tie_msg("#{session[:player_name]} has BUSTED", "lose")
-    end
+  def blackjack?(current_hand_total)
+    current_hand_total == BLACKJACK ? true : false 
   end 
-  
+
+  def bust?(current_hand_total)
+    current_hand_total > BLACKJACK ? true : false
   end 
+
+end 
 
 before do
   @show_hit_or_stay_buttons = true 
@@ -100,8 +100,12 @@ post "/set_name" do
 end  
 
 get "/bet" do
-  session[:player_bet] = nil
-  erb :make_bet
+  if session[:player_name] == nil 
+    redirect '/set_name'
+  else 
+    session[:player_bet] = nil
+    erb :make_bet
+  end 
 end 
 
 post "/bet" do 
@@ -130,14 +134,22 @@ get "/game" do
   end
   session[:turn] = session[:player_name]
   current_hand_total= calculate_deck_total(session[:player_hand]) 
-  player_has_blackjack?(current_hand_total)
+  if blackjack?(current_hand_total)
+    display_game_results("#{session[:player_name]} hits BLACKJACK!!", "win") 
+  elsif bust?(current_hand_total)
+    display_game_results("#{session[:player_name]} has BUSTED :( ", "lose")  
+  end 
   erb :game 
 end 
 
 post "/game/player/hit" do
   session[:player_hand]<< session[:deck].pop
   current_hand_total= calculate_deck_total(session[:player_hand])
-  player_has_blackjack?(current_hand_total)
+  if blackjack?(current_hand_total)
+    display_game_results("#{session[:player_name]} hits BLACKJACK!!", "win") 
+  elsif bust?(current_hand_total)
+    display_game_results("#{session[:player_name]} has BUSTED :( ", "lose")  
+  end 
  erb :game, layout: false 
 end 
 
@@ -153,11 +165,11 @@ get "/game/dealer" do
   dealer_hand_total= calculate_deck_total(session[:dealer_hand])
   
   if dealer_hand_total == BLACKJACK
-    display_win_lose_tie_msg("Dealer has hit BLACKJACK", "lose")
+    display_game_results("Dealer has hit BLACKJACK", "lose")
   elsif dealer_hand_total > BLACKJACK
-    display_win_lose_tie_msg("Dealer has BUSTED", "win")
+    display_game_results("Dealer has BUSTED", "win")
   elsif dealer_hand_total >= 17
-    redirect "/game/dealer/compare"
+    redirect "/game/compare"
   else
     @show_dealer_hit_button = true
   end  
@@ -169,7 +181,7 @@ post "/game/dealer/hit" do
   redirect "/game/dealer"
 end 
 
-get "/game/dealer/compare" do 
+get "/game/compare" do 
   @show_hit_or_stay_buttons = false
   player_total = calculate_deck_total(session[:player_hand])
   dealer_total = calculate_deck_total(session[:dealer_hand])
@@ -177,16 +189,15 @@ get "/game/dealer/compare" do
   Dealer score: #{dealer_total}"
 
   if player_total > dealer_total
-    display_win_lose_tie_msg("#{score}","win")
+    display_game_results("#{score}","win")
   elsif player_total < dealer_total
-    display_win_lose_tie_msg("#{score}","lose")
+    display_game_results("#{score}","lose")
   else 
-    display_win_lose_tie_msg("#{calculate_deck_total(session[:player_hand])}",
+    display_game_results("#{calculate_deck_total(session[:player_hand])}",
     "tie")
   end 
   erb :game, layout: false 
 end 
-
 
 get "/game_over" do
   erb :game_over
